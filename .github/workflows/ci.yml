@@ -16,6 +16,21 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
+      # Test whether username and token are available
+      - name: Test Docker Hub credentials
+        env:
+          DOCKERHUB_USERNAME: ${{ vars.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: |
+          echo "Docker Hub Username: $DOCKERHUB_USERNAME"
+
+          if [ -z "$DOCKERHUB_TOKEN" ]; then
+            echo "Docker Hub Token: NOT FOUND"
+            exit 1
+          else
+            echo "Docker Hub Token: FOUND"
+          fi
+
       - name: Login to Docker Hub
         uses: docker/login-action@v4
         with:
