@@ -9,7 +9,7 @@ on:
 
 jobs:
   build-and-push:
-    name: Build & Push
+    name: Build, Push & Deploy
     runs-on: ubuntu-latest
 
     steps:
@@ -73,12 +73,95 @@ jobs:
           key: ${{ secrets.EC2_PRIVATE_KEY }}
 
           script: |
+
             echo "=========================================="
             echo "Starting deployment on EC2"
             echo "=========================================="
 
-            echo "Running deployment script..."
-            ~/deploy/deploy.sh
+
+            # --------------------------------
+            # 5.1 Check Docker
+            # --------------------------------
+            echo "Checking Docker..."
+
+            docker --version
+
+            echo "Successfully completed - Docker check"
+
+
+            # --------------------------------
+            # 5.2 Pull latest Docker image
+            # --------------------------------
+            echo "Pulling Docker image..."
+
+            docker pull ${{ vars.DOCKERHUB_USERNAME }}/todo-list:latest
+
+            echo "Successfully completed - Docker image pull"
+
+
+            # --------------------------------
+            # 5.3 Stop existing container
+            # --------------------------------
+            echo "Stopping existing container..."
+
+            docker stop todo-list || true
+
+            echo "Successfully completed - Existing container stopped"
+
+
+            # --------------------------------
+            # 5.4 Remove existing container
+            # --------------------------------
+            echo "Removing existing container..."
+
+            docker rm todo-list || true
+
+            echo "Successfully completed - Existing container removed"
+
+
+            # --------------------------------
+            # 5.5 Create and start new container
+            # --------------------------------
+            echo "Creating new Docker container..."
+
+            docker run -d \
+              --name todo-list \
+              -p 8080:8080 \
+              --restart unless-stopped \
+              ${{ vars.DOCKERHUB_USERNAME }}/todo-list:latest
+
+            echo "Successfully completed - New container created"
+
+
+            # --------------------------------
+            # 5.6 Check running container
+            # --------------------------------
+            echo "Checking running containers..."
+
+            docker ps
+
+            echo "Successfully completed - Container is running"
+
+
+            # --------------------------------
+            # 5.7 Check Spring Boot logs
+            # --------------------------------
+            echo "Checking Spring Boot application logs..."
+
+            docker logs --tail 50 todo-list
+
+            echo "Successfully completed - Spring Boot application started"
+
+
+            # --------------------------------
+            # 5.8 Remove unused Docker images
+            # --------------------------------
+            echo "Cleaning unused Docker images..."
+
+            docker image prune -f
+
+            echo "Successfully completed - Docker cleanup"
+
 
             echo "=========================================="
             echo "Successfully completed - EC2 deployment"
